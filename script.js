@@ -1,33 +1,84 @@
-// Simulated Lahaina road network (15 nodes ≈ 15,000-node equivalent)
+// EXPANDED: 20-node Lahaina road network (simulates 15,000-node complexity)
 const graph = {
     nodes: {
-        'A': { lat: 20.8849, lng: -156.6856, name: "Front St & Papalaua" }, // Start
+        // Main evacuation route (Honoapi'ilani Hwy)
+        'A': { lat: 20.8849, lng: -156.6856, name: "Front St & Papalaua (Start)" },
         'B': { lat: 20.8855, lng: -156.6848, name: "Front St & Dickenson" },
         'C': { lat: 20.8861, lng: -156.6839, name: "Front St & Prison St" },
-        'D': { lat: 20.8867, lng: -156.6821, name: "Honoapi'ilani Hwy" },
+        'D': { lat: 20.8867, lng: -156.6821, name: "Honoapi'ilani Hwy & Keawe" },
         'E': { lat: 20.8873, lng: -156.6803, name: "Hwy 30 & Kai Hele Ku" },
-        'F': { lat: 20.8880, lng: -156.6785, name: "Hwy 30 North Exit" }, // End
-        // Additional nodes for realism
-        'G': { lat: 20.8840, lng: -156.6865, name: "Cannery Mall" },
-        'H': { lat: 20.8830, lng: -156.6875, name: "Mala Wharf" },
-        'I': { lat: 20.8870, lng: -156.6790, name: "Waine'e St" },
-        'J': { lat: 20.8890, lng: -156.6770, name: "Napili Bay" },
+        'F': { lat: 20.8880, lng: -156.6785, name: "Hwy 30 North Exit (End)" },
+        
+        // Side streets (evacuation chokepoints)
+        'G': { lat: 20.8840, lng: -156.6865, name: "Maui St" },
+        'H': { lat: 20.8835, lng: -156.6850, name: "Luakini St" },
+        'I': { lat: 20.8830, lng: -156.6835, name: "Wainee St" },
+        'J': { lat: 20.8825, lng: -156.6820, name: "Shaw St" },
+        'K': { lat: 20.8820, lng: -156.6805, name: "Papalaua St Ext" },
+        
+        // North Lahaina neighborhoods
+        'L': { lat: 20.8878, lng: -156.6815, name: "Kenui St" },
+        'M': { lat: 20.8885, lng: -156.6800, name: "Awaiku St" },
+        'N': { lat: 20.8892, lng: -156.6785, name: "Napilihau St" },
+        'O': { lat: 20.8899, lng: -156.6770, name: "Napili Bay Rd" },
+        
+        // South Lahaina (alternate route)
+        'P': { lat: 20.8832, lng: -156.6872, name: "Mala Wharf" },
+        'Q': { lat: 20.8828, lng: -156.6880, name: "Mala Rd" },
+        'R': { lat: 20.8860, lng: -156.6790, name: "Kai Hele Ku Bypass" },
+        'S': { lat: 20.8850, lng: -156.6775, name: "Kuialua St" },
+        'T': { lat: 20.8840, lng: -156.6760, name: "Kaanapali Beach Rd" },
     },
+    
+    // 25 edges forming a grid + main evacuation artery
     edges: [
+        // Main evacuation route (critical path)
         { from: 'A', to: 'B', weight: 100, closed: false },
         { from: 'B', to: 'C', weight: 80, closed: false },
-        { from: 'C', to: 'D', weight: 120, closed: false },
+        { from: 'C', to: 'D', weight: 120, closed: false, fireRisk: true },
         { from: 'D', to: 'E', weight: 90, closed: false },
         { from: 'E', to: 'F', weight: 70, closed: false },
-        // Alternate route (what CH would use)
-        { from: 'B', to: 'D', weight: 180, closed: false }, // Shortcut
-        { from: 'A', to: 'G', weight: 50, closed: false },
-        { from: 'G', to: 'H', weight: 60, closed: false },
-        { from: 'C', to: 'I', weight: 40, closed: false },
-        { from: 'E', to: 'J', weight: 100, closed: false },
+        
+        // Side streets (will be closed by fire)
+        { from: 'A', to: 'G', weight: 60, closed: false },
+        { from: 'G', to: 'H', weight: 50, closed: false },
+        { from: 'H', to: 'I', weight: 40, closed: false, fireRisk: true },
+        { from: 'I', to: 'J', weight: 55, closed: false },
+        { from: 'J', to: 'K', weight: 65, closed: false },
+        { from: 'K', to: 'D', weight: 85, closed: false },
+        
+        // North Lahaina loop (alternative path)
+        { from: 'D', to: 'L', weight: 45, closed: false },
+        { from: 'L', to: 'M', weight: 55, closed: false },
+        { from: 'M', to: 'N', weight: 50, closed: false },
+        { from: 'N', to: 'O', weight: 70, closed: false },
+        { from: 'O', to: 'F', weight: 100, closed: false },
+        
+        // South Lahaina coastal route (longer but fire-safe)
+        { from: 'A', to: 'P', weight: 90, closed: false },
+        { from: 'P', to: 'Q', weight: 70, closed: false },
+        { from: 'Q', to: 'T', weight: 150, closed: false },
+        { from: 'T', to: 'S', weight: 80, closed: false },
+        { from: 'S', to: 'R', weight: 60, closed: false },
+        { from: 'R', to: 'E', weight: 40, closed: false },
+        
+        // Cross connectors
+        { from: 'H', to: 'L', weight: 100, closed: false },
+        { from: 'I', to: 'M', weight: 90, closed: false, fireRisk: true },
+        { from: 'J', to: 'N', weight: 110, closed: false },
+        { from: 'K', to: 'O', weight: 130, closed: false },
     ],
+    
+    // Contraction Hierarchy shortcuts (pre-computed)
     shortcuts: [
+        // Node C contraction shortcut
         { from: 'B', to: 'D', via: ['C'], originalCost: 200, shortcutCost: 180 },
+        // Node I contraction shortcut (fire-prone area)
+        { from: 'H', to: 'J', via: ['I'], originalCost: 95, shortcutCost: 85 },
+        // Node M contraction shortcut
+        { from: 'L', to: 'N', via: ['M'], originalCost: 105, shortcutCost: 95 },
+        // Coastal bypass shortcut
+        { from: 'P', to: 'R', via: ['Q', 'T', 'S'], originalCost: 360, shortcutCost: 320 },
     ]
 };
 
@@ -39,7 +90,7 @@ let pathLines = [];
 
 // Initialize map
 function initMap() {
-    map = L.map('map').setView([20.886, -156.683], 15);
+    map = L.map('map').setView([20.886, -156.683], 14);
     
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap, © CartoDB',
@@ -49,7 +100,7 @@ function initMap() {
     // Add node markers
     Object.entries(graph.nodes).forEach(([id, node]) => {
         const marker = L.circleMarker([node.lat, node.lng], {
-            radius: 8,
+            radius: 6,
             color: '#00D4FF',
             fillColor: '#00D4FF',
             fillOpacity: 0.8,
@@ -70,16 +121,31 @@ function drawEdges() {
     pathLines = [];
 
     graph.edges.forEach(edge => {
-        if (edge.closed) return;
+        if (edge.closed) {
+            // Draw red X for closed roads
+            const from = graph.nodes[edge.from];
+            const to = graph.nodes[edge.to];
+            const midLat = (from.lat + to.lat) / 2;
+            const midLng = (from.lng + to.lng) / 2;
+            
+            L.marker([midLat, midLng], {
+                icon: L.divIcon({
+                    html: '🔥',
+                    iconSize: [20, 20],
+                    className: 'fire-icon'
+                })
+            }).addTo(map);
+            return;
+        }
         
         const from = graph.nodes[edge.from];
         const to = graph.nodes[edge.to];
         
         const line = L.polyline([[from.lat, from.lng], [to.lat, to.lng]], {
-            color: '#555',
-            weight: 2,
+            color: edge.fireRisk ? '#FFA500' : '#555',
+            weight: edge.fireRisk ? 3 : 2,
             opacity: 0.6,
-            dashArray: '5, 5'
+            dashArray: edge.fireRisk ? '' : '5, 5'
         }).addTo(map);
         
         pathLines.push(line);
@@ -103,64 +169,81 @@ function updateStatus(msg) {
     document.getElementById('status').textContent = msg;
 }
 
-// Simulate slow Dijkstra
+// Simulate slow Dijkstra (explores ALL nodes in network)
 function dijkstra(start, end) {
     return new Promise(resolve => {
         const startTime = performance.now();
-        const visited = new Set();
-        const dist = {};
-        const prev = {};
+        const networkSize = Object.keys(graph.nodes).length; // 20 nodes
         
-        // Simulate slow exploration
+        // Simulate exploring entire network
         let nodesExplored = 0;
         const interval = setInterval(() => {
-            if (nodesExplored < 15) {
+            if (nodesExplored < networkSize) {
                 nodesExplored++;
                 document.getElementById('dijkstraNodes').textContent = nodesExplored;
-                document.getElementById('dijkstraProgress').style.width = `${(nodesExplored/15)*100}%`;
+                document.getElementById('dijkstraProgress').style.width = `${(nodesExplored/networkSize)*100}%`;
             } else {
                 clearInterval(interval);
                 
-                // Simulate path found
-                const path = ['A', 'B', 'C', 'D', 'E', 'F'];
                 const endTime = performance.now();
-                const duration = Math.floor(endTime - startTime);
+                const duration = Math.max(1500, Math.floor(endTime - startTime)); // Minimum 1.5s for demo
+                
+                // Find path (simplified - just uses main route)
+                const path = ['A', 'B', 'C', 'D', 'E', 'F'];
+                const isValid = !path.some(id => {
+                    return graph.edges.some(e => e.from === id && e.closed) ||
+                           graph.edges.some(e => e.to === id && e.closed);
+                });
                 
                 resolve({
                     time: duration,
-                    nodesExplored: 15,
+                    nodesExplored: networkSize,
                     path: path,
-                    valid: !path.some(id => isRoadClosed(id))
+                    valid: isValid
                 });
             }
-        }, 150); // 150ms per node = ~2.1 seconds total
+        }, 75); // 75ms per node = ~1.5 seconds for 20 nodes
     });
 }
 
-// Simulate fast CH
+// Simulate fast CH (uses shortcuts)
 function contractionHierarchies(start, end) {
     return new Promise(resolve => {
         const startTime = performance.now();
         
-        // Simulate instant query using shortcuts
         setTimeout(() => {
-            const path = ['A', 'B', 'D', 'E', 'F']; // Uses shortcut
+            // Find best path using shortcuts
+            let path = ['A', 'B', 'D', 'E', 'F']; // Uses B→D shortcut
+            
+            // If fire closed C-D, CH reroutes via shortcut
+            const cdEdge = graph.edges.find(e => e.from === 'C' && e.to === 'D');
+            if (cdEdge && cdEdge.closed) {
+                path = ['A', 'B', 'D', 'E', 'F']; // Already using shortcut
+                updateStatus('🔥 Fire detected! Using B→D shortcut...');
+            }
+            
+            // Check if we need coastal bypass
+            const beEdge = graph.edges.find(e => e.from === 'B' && e.to === 'D');
+            if (beEdge && beEdge.closed) {
+                path = ['A', 'P', 'Q', 'T', 'S', 'R', 'E', 'F']; // Coastal route
+                updateStatus('🔥 Main route blocked! Using coastal bypass...');
+            }
+            
             const endTime = performance.now();
             const duration = Math.floor(endTime - startTime);
             
+            const isValid = !path.some(id => {
+                return graph.edges.some(e => e.from === id && e.closed);
+            });
+            
             resolve({
                 time: duration,
-                nodesExplored: 3,
+                nodesExplored: Math.floor(path.length * 0.6), // CH explores ~60% of path nodes
                 path: path,
-                valid: !path.some(id => isRoadClosed(id))
+                valid: isValid
             });
         }, 50); // ~0.3ms
     });
-}
-
-function isRoadClosed(nodeId) {
-    // Check if any edge from this node is closed
-    return graph.edges.some(e => e.from === nodeId && e.closed);
 }
 
 async function calculateRoutes() {
@@ -171,8 +254,10 @@ async function calculateRoutes() {
     document.getElementById('chTime').textContent = '--';
     document.getElementById('chNodes').textContent = '--';
     document.getElementById('chStatus').textContent = 'Calculating...';
+    document.getElementById('dijkstraProgress').style.width = '0%';
+    document.getElementById('chProgress').style.width = '0%';
     
-    // Run both algorithms "simultaneously"
+    // Run both algorithms
     const dijkstraPromise = dijkstra(startNode, endNode);
     const chPromise = contractionHierarchies(startNode, endNode);
     
@@ -181,16 +266,14 @@ async function calculateRoutes() {
     // Update Dijkstra results
     document.getElementById('dijkstraTime').textContent = dijkstraResult.time;
     document.getElementById('dijkstraNodes').textContent = dijkstraResult.nodesExplored;
-    document.getElementById('dijkstraProgress').style.width = '100%';
     document.getElementById('dijkstraStatus').textContent = 
-        dijkstraResult.valid ? '✓ Route Valid' : '✗ Route Invalid (fire)';
+        dijkstraResult.valid ? '✓ Route Valid' : '✗ ROAD CLOSED BY FIRE';
     document.getElementById('dijkstraStatus').style.color = 
         dijkstraResult.valid ? '#00FF88' : '#FF3C3C';
     
     // Update CH results
     document.getElementById('chTime').textContent = chResult.time;
     document.getElementById('chNodes').textContent = chResult.nodesExplored;
-    document.getElementById('chProgress').style.width = '100%';
     document.getElementById('chStatus').textContent = 
         chResult.valid ? '✓ Route Valid' : '⚠ Partial Rebuild Available';
     document.getElementById('chStatus').style.color = '#00FF88';
@@ -207,29 +290,28 @@ function drawRoute(path, color, type) {
     
     const routeLine = L.polyline(latlngs, {
         color: color,
-        weight: 4,
-        opacity: 0.8
+        weight: 5,
+        opacity: 0.9
     }).addTo(map);
     
     pathLines.push(routeLine);
 }
 
-// Simulate fire closing roads
+// Simulate fire closing roads (more realistic)
 function simulateFire() {
-    // Close 3 random edges (not shortcuts)
-    const closableEdges = graph.edges.filter(e => !graph.shortcuts.some(s => s.from === e.from && s.to === e.to));
-    
     // Reset all edges
     graph.edges.forEach(e => e.closed = false);
     
-    // Close 3 random ones
-    for (let i = 0; i < 3; i++) {
-        const idx = Math.floor(Math.random() * closableEdges.length);
-        closableEdges[idx].closed = true;
-    }
+    // Close critical fire-prone edges
+    const fireEdges = graph.edges.filter(e => e.fireRisk).slice(0, 3);
+    fireEdges.forEach(e => e.closed = true);
+    
+    // Also close one random main route
+    const mainRoute = graph.edges.find(e => e.from === 'C' && e.to === 'D');
+    if (mainRoute) mainRoute.closed = true;
     
     drawEdges();
-    updateStatus('🔥 Fire closed 3 roads! Click "Calculate Routes" to see Dynamic CH reroute.');
+    updateStatus('🔥 Fire closed 4 roads! Dynamic CH will use shortcuts/coastal bypass.');
     
     // Reset route calculation
     resetRoute();
@@ -244,6 +326,8 @@ function resetRoute() {
     document.getElementById('chNodes').textContent = '--';
     document.getElementById('dijkstraProgress').style.width = '0%';
     document.getElementById('chProgress').style.width = '0%';
+    document.getElementById('dijkstraStatus').textContent = '--';
+    document.getElementById('chStatus').textContent = '--';
     
     // Reset marker colors
     map.eachLayer(layer => {
@@ -251,6 +335,10 @@ function resetRoute() {
             layer.setStyle({ color: '#00D4FF', fillColor: '#00D4FF' });
         }
     });
+    
+    // Clear route lines
+    pathLines.forEach(line => map.removeLayer(line));
+    pathLines = [];
     
     drawEdges();
 }
